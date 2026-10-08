@@ -11,6 +11,11 @@ require_var FTP_USER
 require_var FTP_PASSWORD
 require_var FTP_REMOTE_DIR
 
+# Allow FTP_HOST values like ftp://1.2.3.4
+FTP_HOST="${FTP_HOST#ftp://}"
+FTP_HOST="${FTP_HOST#ftps://}"
+FTP_HOST="${FTP_HOST%%/*}"
+
 FRONTEND_DIR="$REPO_ROOT/frontend"
 DIST_DIR="$FRONTEND_DIR/dist"
 
