@@ -3,20 +3,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from src.ai_agent.domain.policy import PolicyEvaluator
+from src.assistant.domain.profile import AssistantProfile
 from src.call_management.application.answer_incoming_call import AnswerIncomingCallService
 from src.call_management.application.complete_call import CompleteCallService
 from src.call_management.application.process_caller_message import (
     ProcessCallerMessageService,
     ToolExecutor,
 )
+from src.call_management.domain.call import Call
+from src.contacts.domain.contact import Contact
 from src.infrastructure.config.settings import Settings, get_settings
 from src.infrastructure.messaging.event_bus import InProcessEventBus
+from src.infrastructure.persistence.database import create_engine, create_session_factory
 from src.infrastructure.persistence.memory import (
     InMemoryAssistantProfileRepository,
     InMemoryCallRepository,
     InMemoryContactRepository,
+)
+from src.infrastructure.persistence.sqlalchemy_repos import (
+    SqlAlchemyAssistantProfileRepository,
+    SqlAlchemyCallRepository,
+    SqlAlchemyContactRepository,
 )
 from src.infrastructure.providers.ai.cursor_sdk import CursorSdkConversationProvider
 from src.infrastructure.providers.ai.fake import FakeAIConversationProvider
@@ -27,14 +37,43 @@ from src.shared.application.ports import (
     NotificationProvider,
     TelephonyProvider,
 )
+from src.shared.domain.value_objects import CallId, ContactId, PhoneNumber
+
+
+class CallRepositoryPort(Protocol):
+    async def get(self, call_id: CallId) -> Call | None: ...
+
+    async def get_by_provider_id(self, provider_call_id: str) -> Call | None: ...
+
+    async def save(self, call: Call) -> None: ...
+
+    async def list_recent(self, *, limit: int = 50) -> list[Call]: ...
+
+
+class ContactRepositoryPort(Protocol):
+    async def get(self, contact_id: ContactId) -> Contact | None: ...
+
+    async def find_by_phone(self, phone: PhoneNumber) -> Contact | None: ...
+
+    async def save(self, contact: Contact) -> None: ...
+
+    async def search(self, query: str, *, limit: int = 20) -> list[Contact]: ...
+
+    async def list_all(self, *, limit: int = 200) -> list[Contact]: ...
+
+
+class AssistantProfileRepositoryPort(Protocol):
+    async def get(self, profile_id: str = "default") -> AssistantProfile | None: ...
+
+    async def save(self, profile: AssistantProfile) -> None: ...
 
 
 @dataclass(slots=True)
 class AppContainer:
     settings: Settings
-    calls: InMemoryCallRepository
-    contacts: InMemoryContactRepository
-    profiles: InMemoryAssistantProfileRepository
+    calls: CallRepositoryPort
+    contacts: ContactRepositoryPort
+    profiles: AssistantProfileRepositoryPort
     events: InProcessEventBus
     telephony: TelephonyProvider
     ai: AIConversationProvider
@@ -46,12 +85,21 @@ class AppContainer:
 
 def build_container(settings: Settings | None = None) -> AppContainer:
     cfg = settings or get_settings()
-    calls = InMemoryCallRepository()
-    contacts = InMemoryContactRepository()
-    profiles = InMemoryAssistantProfileRepository()
     events = InProcessEventBus()
     telephony: TelephonyProvider = FakeTelephonyProvider()
     notifications: NotificationProvider = FakeNotificationProvider()
+
+    # Production uses Postgres; local/tests stay in-memory unless production env.
+    if cfg.app_env == "production":
+        engine = create_engine(cfg.database_url, pool_size=cfg.database_pool_size)
+        sessions = create_session_factory(engine)
+        calls: CallRepositoryPort = SqlAlchemyCallRepository(sessions)
+        contacts: ContactRepositoryPort = SqlAlchemyContactRepository(sessions)
+        profiles: AssistantProfileRepositoryPort = SqlAlchemyAssistantProfileRepository(sessions)
+    else:
+        calls = InMemoryCallRepository()
+        contacts = InMemoryContactRepository()
+        profiles = InMemoryAssistantProfileRepository()
 
     if cfg.ai_provider == "cursor_sdk":
         ai: AIConversationProvider = CursorSdkConversationProvider(

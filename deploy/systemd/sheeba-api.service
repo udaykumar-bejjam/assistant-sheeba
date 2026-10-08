@@ -8,7 +8,7 @@ Type=simple
 User=root
 WorkingDirectory=__APP_DIR__
 EnvironmentFile=__APP_DIR__/.env
-ExecStart=__APP_DIR__/.venv/bin/uvicorn src.interfaces.api.main:app --host __APP_HOST__ --port __APP_PORT__ --proxy-headers --forwarded-allow-ips=*
+ExecStart=__APP_DIR__/.venv/bin/uvicorn src.interfaces.api.main:app --host __APP_HOST__ --port __APP_PORT__ --proxy-headers --forwarded-allow-ips=127.0.0.1
 Restart=always
 RestartSec=5
 TimeoutStopSec=30

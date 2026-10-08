@@ -24,6 +24,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     container = build_container(settings)
     set_container(container)
     app.state.container = container
+    existing = await container.profiles.get("default")
+    if existing is None:
+        from src.assistant.domain.profile import AssistantProfile
+
+        await container.profiles.save(AssistantProfile.default())
+        logger.info("assistant_profile_seeded", profile_id="default")
     logger.info("sheeba_api_started", env=settings.app_env, ai_provider=settings.ai_provider)
     yield
 
