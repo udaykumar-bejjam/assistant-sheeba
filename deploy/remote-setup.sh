@@ -17,6 +17,8 @@ SERVICE_NAME="${VPS_SERVICE_NAME:-sheeba-api}"
 APP_PORT="${APP_PORT:-8000}"
 APP_HOST="${APP_HOST:-0.0.0.0}"
 
+mkdir -p "$APP_DIR/logs" "$APP_DIR/run"
+
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 fi
