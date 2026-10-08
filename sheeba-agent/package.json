@@ -1,0 +1,24 @@
+{
+  "name": "sheeba-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sheeba — Cursor SDK AI brain for Uday's receptionist",
+  "scripts": {
+    "validate": "bdk validate --dir .",
+    "info": "bdk info --dir . --json",
+    "serve": "bdk serve --dir . --mode single --dev",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cursor/bdk": "latest",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}
