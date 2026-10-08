@@ -57,18 +57,23 @@ systemctl enable "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
 
 if [[ -d "${VPS_NGINX_AVAILABLE:-/etc/nginx/sites-available}" ]] && [[ -f "$APP_DIR/deploy/nginx/sheeba-api.conf" ]]; then
-  echo "[remote] Installing nginx site (optional; does not overwrite other sites)"
   NGINX_AVAIL="${VPS_NGINX_AVAILABLE:-/etc/nginx/sites-available}"
   NGINX_ENAB="${VPS_NGINX_ENABLED:-/etc/nginx/sites-enabled}"
-  sed \
-    -e "s|__SERVER_NAME__|${VPS_API_SERVER_NAME:-_}|g" \
-    -e "s|__UPSTREAM_PORT__|${APP_PORT}|g" \
-    "$APP_DIR/deploy/nginx/sheeba-api.conf" > "${NGINX_AVAIL}/sheeba-api"
-  ln -sfn "${NGINX_AVAIL}/sheeba-api" "${NGINX_ENAB}/sheeba-api"
-  if nginx -t; then
-    systemctl reload nginx
+  TARGET="${NGINX_AVAIL}/sheeba-api"
+  if [[ -f "$TARGET" ]] && grep -q "ssl_certificate" "$TARGET"; then
+    echo "[remote] Keeping existing TLS nginx site (certbot already configured)"
   else
-    echo "[remote] WARNING: nginx -t failed; left site file in place but did not reload"
+    echo "[remote] Installing nginx site (optional; does not overwrite other sites)"
+    sed \
+      -e "s|__SERVER_NAME__|${VPS_API_SERVER_NAME:-_}|g" \
+      -e "s|__UPSTREAM_PORT__|${APP_PORT}|g" \
+      "$APP_DIR/deploy/nginx/sheeba-api.conf" > "$TARGET"
+    ln -sfn "$TARGET" "${NGINX_ENAB}/sheeba-api"
+    if nginx -t; then
+      systemctl reload nginx
+    else
+      echo "[remote] WARNING: nginx -t failed; left site file in place but did not reload"
+    fi
   fi
 fi
 
