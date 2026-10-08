@@ -20,6 +20,7 @@ htmlcov/
 # Node
 node_modules/
 frontend/dist/
+frontend/tsconfig.tsbuildinfo
 sheeba-agent/node_modules/
 sheeba-agent/.bdk/
 sheeba-agent/state/
