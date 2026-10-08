@@ -1,0 +1,26 @@
+[Unit]
+Description=Sheeba AI Receptionist API
+After=network.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=__APP_DIR__
+EnvironmentFile=__APP_DIR__/.env
+ExecStart=__APP_DIR__/.venv/bin/uvicorn src.interfaces.api.main:app --host __APP_HOST__ --port __APP_PORT__ --proxy-headers --forwarded-allow-ips=*
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+# Do not kill unrelated processes
+KillMode=control-group
+
+# Hardening (compatible with multi-tenant VPS)
+NoNewPrivileges=true
+PrivateTmp=true
+
+StandardOutput=append:__APP_DIR__/logs/api.out.log
+StandardError=append:__APP_DIR__/logs/api.err.log
+
+[Install]
+WantedBy=multi-user.target

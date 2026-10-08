@@ -63,6 +63,20 @@ POST /api/v1/calls/{id}/complete
 
 External vendors are behind ports; CI uses fakes.
 
+## Deploy (VPS API + FTP UI)
+
+API runs on an existing VPS (Postgres/Redis already present) via **rsync + root password**.
+UI `dist/` is uploaded to a **separate FTP host**.
+
+```bash
+cp .env.example .env
+# fill VPS_HOST, VPS_PASSWORD, FTP_*, DATABASE_URL, CORS_ORIGINS, VITE_API_BASE_URL, JWT_SECRET
+chmod +x scripts/deploy.sh scripts/deploy-api.sh scripts/deploy-ui.sh
+./scripts/deploy.sh
+```
+
+Details: [docs/deployment.md](docs/deployment.md)
+
 ## Quality
 
 ```bash
